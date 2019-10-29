@@ -44,8 +44,8 @@ if __name__ == "__main__":
 
     nvars = sorted(set(re.findall("[r][0-9]{1,2}", text)))
     write("section .data", 0)
-    write("scan:  db  \"%\d\", 0")
-    write("print:  db  \"%\d\", 10, 0")
+    write("scan:  db  \"%d\", 0")
+    write("print:  db  \"%d\", 10, 0")
     for i in nvars:
         write("r{} dd 0".format(i))
     write()
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         # ----- Desvio ------
         if args[0] == "if":
             op = cmp[args[2]]
-            x, y, z = args[1], args[3], anti_cmp[op]
+            x, y, z = args[1], args[3], op
 
             if x.isdecimal():
                 write("mov eax, {}".format(x))
@@ -82,13 +82,15 @@ if __name__ == "__main__":
 
         # ----- Desvio Cont. -----
         elif args[0] == "else":
+            write("jmp resto{}".format(label_if))
             write("else{}:".format(label_if))
             tem_else = True
         
         # ----- Fim Desvio -----
         elif args[0] == "endif":
-            write("endif{}:".format(label_if))
             if tem_else:
+                write("jmp resto{}".format(label_if))
+                write("endif{}:".format(label_if))
                 tem_else = False
 
                 if x.isdecimal():
@@ -102,7 +104,10 @@ if __name__ == "__main__":
                     write("mov ebx, [{}]".format(y))
 
                 write("cmp eax, ebx")
-                write("{} else{}".format(z, label_if))
+                write("{} else{}".format(anti_cmp[z], label_if))
+                write("resto{}:".format(label_if))
+            else:
+                write("endif{}:".format(label_if))
             
             label_if += 1
 
@@ -113,7 +118,7 @@ if __name__ == "__main__":
         
         # ----- Fim Loop -----
         elif args[0] == "endwhile":
-            w = anti_cmp[cmp[w]]
+            # w = anti_cmp[cmp[w]]
             write("mov eax, [{}]".format(q))
             
             if t.isdecimal():
@@ -122,7 +127,8 @@ if __name__ == "__main__":
                 write("mov ebx, [{}]".format(t))
             
             write("cmp eax, ebx")
-            write("{} while{}".format(w, label_wh))
+            write("{} while{}".format(cmp[w], label_wh))
+            label_wh += 1
 
         # ----- Impressão ------        
         elif args[0] == "print":
@@ -186,39 +192,40 @@ if __name__ == "__main__":
 
                 # DIV & MOD
                 elif args[3] == "/" or args[3] == "%":
-                    write("mov ebx 0")
+                    write("mov edx, 0")
 
                     if args[3] == "/":
-                        op = "eax"
+                        opr = "eax"
                     else:
-                        op = "ebx"
+                        opr = "edx"
 
                     # ri = const op const
                     if args[2].isdecimal() and args[4].isdecimal():
                         write("mov eax, {}".format(args[2]))
-                        write("mov edx, {}".format(args[4]))
-                        write("idiv edx".format(args[4]))
-                        write("mov dword[{}], {}".format(args[0], op))
+                        write("mov ebx, {}".format(args[4]))
+                        write("idiv ebx")
+                        write("mov dword[{}], {}".format(args[0], opr))
 
                     # ri = const op rj
                     elif args[2].isdecimal():
                         write("mov eax, {}".format(args[2]))
-                        write("mov edx, [{}]".format(args[4]))
-                        write("idiv edx".format(args[4]))                        
-                        write("mov dword[{}], eax".format(args[0]))
+                        write("mov ebx, [{}]".format(args[4]))
+                        write("idiv ebx")                        
+                        write("mov dword[{}], {}".format(args[0], opr))
 
                     # ri = rj op const
                     elif args[4].isdecimal():
                         write("mov eax, [{}]".format(args[2]))
-                        write("mov edx, {}".format(args[4]))
-                        write("idiv edx".format(args[4]))                        
-                        write("mov dword[{}], eax".format(args[0]))
+                        write("mov ebx, {}".format(args[4]))
+                        write("idiv ebx")                        
+                        write("mov dword[{}], {}".format(args[0], opr))
 
                     # ri = rj op rk
-                    write("mov eax, [{}]".format(args[2]))
-                    write("mov edx, [{}]".format(args[4]))
-                    write("idiv edx".format(args[4]))                        
-                    write("mov dword[{}], eax".format(args[0]))
+                    else:
+                        write("mov eax, [{}]".format(args[2]))
+                        write("mov ebx, [{}]".format(args[4]))
+                        write("idiv ebx")                        
+                        write("mov dword[{}], {}".format(args[0], opr))
 
                 # OUTROS
                 # ri = const op const
