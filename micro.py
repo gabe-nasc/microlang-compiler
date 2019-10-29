@@ -19,34 +19,39 @@ if __name__ == "__main__":
         write("r{} DD ?".format(i))
     write("")
 
-    label = 0
+    label_if = 0
+    label_wh = 0
     tem_else = False
     x, y, z = None, None, None
+    q, w, t = None, None, None
+
+    cmp = {
+        "==":"je",
+        "!=":"jne",
+        ">":"jg",
+        ">=":"jge",
+        "<":"jl",
+        "<=":"jle"
+    }
+
+    anti_cmp = {
+        "je":"jne",
+        "jne":"je",
+        "jg":"jle",
+        "jle":"jg",
+        "jl":"jge",
+        "jge":"jl"
+    }
+
     for line in text:
         args = line.strip().split()
+        if len(args) == 0:
+            continue
 
         # ----- Desvio ------
         if args[0] == "if":
-            cmp = {
-                "==":"je",
-                "!=":"jne",
-                ">":"jg",
-                ">=":"jge",
-                "<":"jl",
-                "<=":"jle"
-            }
-
-            anti_op = {
-                "je":"jne",
-                "jne":"je",
-                "jg":"jle",
-                "jle":"jg",
-                "jl":"jge",
-                "jge":"jl"
-            }
-
             op = cmp[args[2]]
-            x, y, z = args[1], args[3], anti_op[op]
+            x, y, z = args[1], args[3], anti_cmp[op]
 
             if x.isdecimal():
                 write("mov eax {}".format(x))
@@ -59,18 +64,18 @@ if __name__ == "__main__":
                 write("mov ebx [{}]".format(y))
 
             write("cmp eax ebx")
-            write("{} #if{}".format(op, label))
-            write("jmp #endif{}".format(label))
-            write("#if{}".format(label))
+            write("{} #if{}".format(op, label_if))
+            write("jmp endif{}".format(label_if))
+            write("#if{}".format(label_if))
 
         # ----- Desvio Cont. -----
         elif args[0] == "else":
-            write("#else{}".format(label))
+            write("#else{}".format(label_if))
             tem_else = True
         
         # ----- Fim Desvio -----
         elif args[0] == "endif":
-            write("#endif{}".format(label))
+            write("#endif{}".format(label_if))
             if tem_else:
                 tem_else = False
 
@@ -85,9 +90,27 @@ if __name__ == "__main__":
                     write("mov ebx [{}]".format(y))
 
                 write("cmp eax ebx")
-                write("{} #else{}".format(z, label))
+                write("{} else{}".format(z, label_if))
             
-            label += 1
+            label_if += 1
+
+        # ----- Loop ------
+        elif args[0] == "while":
+            q, w, t = args[1], args[2], args[3]
+            write("#while{}".format(label_wh))
+        
+        # ----- Fim Loop -----
+        elif args[0] == "endwhile":
+            w = anti_cmp[cmp[w]]
+            write("mov eax [{}]".format(q))
+            
+            if t.isdecimal():
+                write("mov ebx {}".format(t))
+            else:
+                write("mov ebx [{}]".format(t))
+            
+            write("cmp eax ebx")
+            write("{} while{}".format(w, label_wh))
 
         # ----- Atribuição -----
         elif args[1] == "=":
