@@ -180,7 +180,7 @@ if __name__ == "__main__":
                     # ri = rj op const
                     elif args[4].isdecimal():
                         write("mov eax, [{}]".format(args[2]))
-                        write("{} eax, {}".format(op[args[3]], args[2]))
+                        write("{} eax, {}".format(op[args[3]], args[4]))
                         write("mov dword[{}], eax".format(args[0]))
 
                     # ri = rj op rk
